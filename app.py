@@ -1,5 +1,5 @@
 import streamlit as st
-import anthropic
+from groq import Groq
 
 # ─── CONFIG PAGE ────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -191,23 +191,25 @@ if prompt := st.chat_input("Écrivez votre message..."):
         st.markdown(prompt)
 
     try:
-        client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
         with st.chat_message("assistant"):
             with st.spinner(""):
-                response = client.messages.create(
-                    model="claude-haiku-4-5-20251001",
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
                     max_tokens=400,
-                    system=SYSTEM_PROMPT,
                     messages=[
-                        {"role": m["role"], "content": m["content"]}
-                        for m in st.session_state.messages
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        *[
+                            {"role": m["role"], "content": m["content"]}
+                            for m in st.session_state.messages
+                        ]
                     ]
                 )
-                reply = response.content[0].text
+                reply = response.choices[0].message.content
                 st.markdown(reply)
 
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
     except Exception:
-        st.error("Une erreur s'est produite. Vérifiez votre clé API dans les secrets Streamlit.")
+        st.error("Une erreur s'est produite. Vérifiez votre clé GROQ_API_KEY dans les secrets Streamlit.")
